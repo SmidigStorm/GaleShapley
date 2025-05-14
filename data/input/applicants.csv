@@ -1,0 +1,11 @@
+applicant_id,S1_priority,S2_priority,S1_Q1_eligible,S1_Q2_eligible,S1_Q3_eligible,S1_Q1_points,S1_Q2_points,S1_Q3_points,S2_Q1_eligible,S2_Q2_eligible,S2_Q1_points,S2_Q2_points
+Tesla,1,2,No,No,Yes,55,50,55,No,Yes,50,55
+Edison,2,1,No,No,Yes,50,50,50,No,Yes,50,50
+Bell,1,2,No,No,Yes,50,40,50,No,Yes,40,50
+Turing,1,2,No,Yes,Yes,40,30,40,Yes,Yes,30,40
+Jobs,1,2,No,Yes,Yes,35,35,35,Yes,Yes,35,35
+Franklin,2,1,No,Yes,Yes,30,45,30,Yes,Yes,45,30
+Einstein,1,2,No,Yes,Yes,30,30,30,Yes,Yes,30,30
+DaVinci,2,1,Yes,Yes,Yes,30,30,30,Yes,Yes,30,30
+Curie,1,2,No,Yes,Yes,30,20,30,Yes,Yes,20,30
+Newton,2,1,No,Yes,Yes,30,10,30,Yes,Yes,10,30
