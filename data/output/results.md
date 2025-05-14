@@ -25,16 +25,16 @@ Total students admitted: 7 out of 10
 ### Q1 (Capacity: 1)
 | Student | Points |
 |---------|--------|
-| Newton | 10 |
+| Jobs | 35 |
 
 ### Q2 (Capacity: 2)
 | Student | Points |
 |---------|--------|
 | Edison | 50 |
-| Bell | 50 |
+| Newton | 30 |
 
 ## Unmatched Students
 
+- Bell
 - Curie
-- Jobs
 - Turing

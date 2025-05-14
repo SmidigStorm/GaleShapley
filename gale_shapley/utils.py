@@ -153,7 +153,8 @@ def create_university_quotas(raw_applicants, raw_universities):
 
 def handle_guaranteed_students(matching, raw_applicants, gs_applicants, university_quotas):
     """
-    Ensure that guaranteed students are offered a place according to their preferences.
+    Ensure that guaranteed students are offered a place according to their preferences,
+    placing them in the rightmost (lowest priority) quota that has spots.
     
     Args:
         matching: Current matching result from the algorithm
@@ -194,101 +195,77 @@ def handle_guaranteed_students(matching, raw_applicants, gs_applicants, universi
                 current_match_quota = quota_id
                 break
         
-        # Get student's preference order
-        preferences = gs_applicants[student_id].preferences
-        if not preferences:
-            continue
-        
-        # Determine the highest preferred guaranteed university
-        preferred_guaranteed_univs = []
-        for pref in preferences:
+        # Get student's preference order for universities
+        university_preferences = []
+        for pref in gs_applicants[student_id].preferences:
             univ = pref.split('_')[0]
-            if univ in guaranteed_univs and univ not in preferred_guaranteed_univs:
-                preferred_guaranteed_univs.append(univ)
+            if univ in guaranteed_univs and univ not in university_preferences:
+                university_preferences.append(univ)
         
-        # If current match is a higher preference than any guaranteed option, no action needed
-        if current_match:
-            # Find highest preference with guarantee
-            highest_guaranteed_pref = None
-            for pref in preferences:
-                univ = pref.split('_')[0]
-                if univ in guaranteed_univs:
-                    highest_guaranteed_pref = pref
-                    break
-            
-            # Find the preference index of current match
-            current_match_index = -1
-            for i, pref in enumerate(preferences):
-                if pref == current_match_quota:
-                    current_match_index = i
-                    break
-            
-            # Find the preference index of highest guaranteed
-            highest_guaranteed_index = -1
-            for i, pref in enumerate(preferences):
-                if pref == highest_guaranteed_pref:
-                    highest_guaranteed_index = i
-                    break
-            
-            # If current match is better than or equal to guaranteed option, do nothing
-            if current_match_index >= 0 and (highest_guaranteed_index < 0 or current_match_index <= highest_guaranteed_index):
+        # If student is already matched to their highest preferred guaranteed university, no action needed
+        if current_match in university_preferences:
+            current_univ_index = university_preferences.index(current_match)
+            if current_univ_index == 0:  # Already in highest preferred guaranteed university
                 continue
         
         # Student needs to be placed in a guaranteed spot
         # Try each guaranteed university in preference order
-        for guaranteed_univ in preferred_guaranteed_univs:
-            # Find the highest preferred quota for this university
-            preferred_quotas = [p for p in preferences if p.split('_')[0] == guaranteed_univ]
+        for guaranteed_univ in university_preferences:
+            # Find all quotas for this university that the student is eligible for
+            eligible_quotas = []
             
-            for quota_id in preferred_quotas:
-                # Check if student is eligible for this quota
+            for quota_id in matching.keys():
                 univ_id, quota_name = quota_id.split('_', 1)
                 
-                program_eligibility_key = f"{univ_id}_Kvalifisert?"
-                quota_eligibility_key = f"{univ_id}_{quota_name}_eligible"
+                if univ_id == guaranteed_univ:
+                    program_eligibility_key = f"{univ_id}_Kvalifisert?"
+                    quota_eligibility_key = f"{univ_id}_{quota_name}_eligible"
+                    
+                    if (raw_applicants[student_id].get(program_eligibility_key) == 'Ja' and
+                        raw_applicants[student_id].get(quota_eligibility_key) == 'Yes'):
+                        eligible_quotas.append(quota_id)
+            
+            # Sort quotas by name in reverse order (Q3, Q2, Q1) to prioritize rightmost quota
+            eligible_quotas.sort(reverse=True)
+            
+            # Try to place student in eligible quotas
+            for quota_id in eligible_quotas:
+                # Remove from current match if any
+                if current_match_quota and student_id in matching[current_match_quota]:
+                    matching[current_match_quota].remove(student_id)
+                    current_match_quota = None
                 
-                if (raw_applicants[student_id].get(program_eligibility_key) == 'Ja' and
-                    raw_applicants[student_id].get(quota_eligibility_key) == 'Yes'):
+                # Add student to this quota
+                if len(matching[quota_id]) < university_quotas[quota_id].quota:
+                    # There's space available
+                    matching[quota_id].append(student_id)
+                    current_match_quota = quota_id
+                    break
+                else:
+                    # Need to remove the lowest-ranked student
+                    quota_preferences = university_quotas[quota_id].preferences
                     
-                    # Remove from current match if any
-                    if current_match_quota:
-                        matching[current_match_quota].remove(student_id)
+                    # Find the lowest-ranked student currently matched
+                    current_matches = matching[quota_id]
+                    lowest_ranked = None
+                    lowest_rank = -1
                     
-                    # Add student to this quota
-                    if len(matching[quota_id]) < university_quotas[quota_id].quota:
-                        # There's space available
+                    for match_id in current_matches:
+                        if match_id in quota_preferences:
+                            rank = quota_preferences.index(match_id)
+                            if lowest_ranked is None or rank > lowest_rank:
+                                lowest_ranked = match_id
+                                lowest_rank = rank
+                    
+                    # Replace the lowest-ranked student
+                    if lowest_ranked:
+                        matching[quota_id].remove(lowest_ranked)
                         matching[quota_id].append(student_id)
+                        current_match_quota = quota_id
                         break
-                    else:
-                        # Need to remove the lowest-ranked student
-                        preferences = university_quotas[quota_id].preferences
-                        
-                        # Find the lowest-ranked student currently matched
-                        current_matches = matching[quota_id]
-                        lowest_ranked = None
-                        lowest_rank = -1
-                        
-                        for match_id in current_matches:
-                            if match_id in preferences:
-                                rank = preferences.index(match_id)
-                                if lowest_ranked is None or rank > lowest_rank:
-                                    lowest_ranked = match_id
-                                    lowest_rank = rank
-                        
-                        # Replace the lowest-ranked student
-                        if lowest_ranked:
-                            matching[quota_id].remove(lowest_ranked)
-                            matching[quota_id].append(student_id)
-                            break
             
             # If we successfully placed the student, break out of the university loop
-            placed = False
-            for quota_id, matches in matching.items():
-                if student_id in matches:
-                    placed = True
-                    break
-            
-            if placed:
+            if current_match_quota:
                 break
     
     return matching
