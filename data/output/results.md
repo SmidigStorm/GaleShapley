@@ -12,8 +12,8 @@ Total students admitted: 7 out of 10
 ### Q2 (Capacity: 2)
 | Student | Points |
 |---------|--------|
-| Jobs | 35 |
-| Turing | 30 |
+| Franklin | 45 |
+| Einstein | 30 |
 
 ### Q3 (Capacity: 1)
 | Student | Points |
@@ -25,7 +25,7 @@ Total students admitted: 7 out of 10
 ### Q1 (Capacity: 1)
 | Student | Points |
 |---------|--------|
-| Franklin | 45 |
+| Jobs | 35 |
 
 ### Q2 (Capacity: 2)
 | Student | Points |
@@ -36,5 +36,5 @@ Total students admitted: 7 out of 10
 ## Unmatched Students
 
 - Curie
-- Einstein
 - Newton
+- Turing

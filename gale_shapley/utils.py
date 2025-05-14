@@ -56,19 +56,25 @@ def create_applicant_preferences(raw_applicants):
         # Create a list of quota categories with university priority
         quota_options = []
         
-        # Check eligibility for S1 quotas
-        if 'S1_Q1_eligible' in app_data and app_data['S1_Q1_eligible'] == 'Yes':
-            quota_options.append(('S1_Q1', s1_priority, 1))
-        if 'S1_Q2_eligible' in app_data and app_data['S1_Q2_eligible'] == 'Yes':
-            quota_options.append(('S1_Q2', s1_priority, 2))
-        if 'S1_Q3_eligible' in app_data and app_data['S1_Q3_eligible'] == 'Yes':
-            quota_options.append(('S1_Q3', s1_priority, 3))
+        # Check eligibility for S1 and its quotas
+        s1_program_eligible = app_data.get('S1_Kvalifisert?') == 'Ja'
+        
+        if s1_program_eligible:
+            if 'S1_Q1_eligible' in app_data and app_data['S1_Q1_eligible'] == 'Yes':
+                quota_options.append(('S1_Q1', s1_priority, 1))
+            if 'S1_Q2_eligible' in app_data and app_data['S1_Q2_eligible'] == 'Yes':
+                quota_options.append(('S1_Q2', s1_priority, 2))
+            if 'S1_Q3_eligible' in app_data and app_data['S1_Q3_eligible'] == 'Yes':
+                quota_options.append(('S1_Q3', s1_priority, 3))
+        
+        # Check eligibility for S2 and its quotas
+        s2_program_eligible = app_data.get('S2_Kvalifisert?') == 'Ja'
             
-        # Check eligibility for S2 quotas
-        if 'S2_Q1_eligible' in app_data and app_data['S2_Q1_eligible'] == 'Yes':
-            quota_options.append(('S2_Q1', s2_priority, 1))
-        if 'S2_Q2_eligible' in app_data and app_data['S2_Q2_eligible'] == 'Yes':
-            quota_options.append(('S2_Q2', s2_priority, 2))
+        if s2_program_eligible:
+            if 'S2_Q1_eligible' in app_data and app_data['S2_Q1_eligible'] == 'Yes':
+                quota_options.append(('S2_Q1', s2_priority, 1))
+            if 'S2_Q2_eligible' in app_data and app_data['S2_Q2_eligible'] == 'Yes':
+                quota_options.append(('S2_Q2', s2_priority, 2))
         
         # Sort by university priority, then by quota priority
         quota_options.sort(key=lambda x: (x[1], x[2]))
@@ -116,17 +122,28 @@ def create_university_quotas(raw_applicants, raw_universities):
             # Collect eligible students with their points
             eligible_students = []
             for app_id, app_data in raw_applicants.items():
-                eligibility_key = f"{univ_id}_{quota_name}_eligible"
+                # Check base eligibility for the study program
+                program_eligibility_key = f"{univ_id}_Kvalifisert?"
+                
+                # Check quota-specific eligibility
+                quota_eligibility_key = f"{univ_id}_{quota_name}_eligible"
                 points_key = f"{univ_id}_{quota_name}_points"
                 
-                if eligibility_key in app_data and app_data[eligibility_key] == 'Yes' and points_key in app_data:
+                # Student must be eligible for both the program AND the specific quota
+                if (
+                    program_eligibility_key in app_data and
+                    app_data[program_eligibility_key] == 'Ja' and
+                    quota_eligibility_key in app_data and 
+                    app_data[quota_eligibility_key] == 'Yes' and 
+                    points_key in app_data
+                ):
                     points = int(app_data[points_key])
                     eligible_students.append((app_id, points))
             
             # Sort by points (higher points = higher ranking)
             eligible_students.sort(key=lambda x: x[1], reverse=True)
             
-            # Create ranking list
+            # Create ranking list - ONLY including eligible students
             ranking = [student[0] for student in eligible_students]
             
             # Create UniversityQuota object
