@@ -1,55 +1,61 @@
 import unittest
-from src.models import Applicant, University
-from src.algorithm import gale_shapley_matching
+from gale_shapley.models import Applicant, UniversityQuota
+from gale_shapley.algorithm import gale_shapley_matching
 
 class TestGaleShapleyAlgorithm(unittest.TestCase):
-    
     def test_basic_matching(self):
-        # Create a simple test case with 3 applicants and 2 universities
+        # Create applicants
         applicants = {
-            'A1': Applicant('A1', ['U1', 'U2']),
-            'A2': Applicant('A2', ['U1', 'U2']),
-            'A3': Applicant('A3', ['U2', 'U1'])
+            'A1': Applicant('A1', ['U1_Q1', 'U2_Q1']),
+            'A2': Applicant('A2', ['U1_Q1', 'U2_Q1']),
+            'A3': Applicant('A3', ['U2_Q1', 'U1_Q1'])
         }
         
-        universities = {
-            'U1': University('U1', 1, ['A1', 'A2', 'A3']),
-            'U2': University('U2', 2, ['A3', 'A1', 'A2'])
+        # Create university quotas
+        university_quotas = {
+            'U1_Q1': UniversityQuota('U1_Q1', 1, ['A1', 'A2', 'A3']),
+            'U2_Q1': UniversityQuota('U2_Q1', 2, ['A3', 'A1', 'A2'])
         }
         
-        matching = gale_shapley_matching(applicants, universities)
+        # Run the algorithm
+        matching = gale_shapley_matching(applicants, university_quotas)
         
-        # Check that the matching is correct
-        self.assertEqual(matching['U1'], ['A1'])
-        self.assertEqual(set(matching['U2']), {'A2', 'A3'})
-        
-    def test_unequal_sets(self):
-        # Test with more applicants than spots
+        # Check results
+        self.assertEqual(matching['U1_Q1'], ['A1'])
+        self.assertEqual(set(matching['U2_Q1']), {'A2', 'A3'})
+    
+    def test_complex_matching(self):
+        # Create applicants with preferences across multiple quota categories
         applicants = {
-            'A1': Applicant('A1', ['U1', 'U2', 'U3']),
-            'A2': Applicant('A2', ['U1', 'U3', 'U2']),
-            'A3': Applicant('A3', ['U2', 'U1', 'U3']),
-            'A4': Applicant('A4', ['U3', 'U2', 'U1']),
-            'A5': Applicant('A5', ['U1', 'U2', 'U3']),
-            'A6': Applicant('A6', ['U2', 'U3', 'U1'])
+            'A1': Applicant('A1', ['U1_Q1', 'U2_Q1', 'U1_Q2']),
+            'A2': Applicant('A2', ['U2_Q1', 'U1_Q1', 'U2_Q2']),
+            'A3': Applicant('A3', ['U1_Q2', 'U2_Q2', 'U1_Q1']),
+            'A4': Applicant('A4', ['U2_Q2', 'U1_Q2', 'U2_Q1'])
         }
         
-        universities = {
-            'U1': University('U1', 2, ['A3', 'A1', 'A5', 'A2', 'A6', 'A4']),
-            'U2': University('U2', 1, ['A6', 'A3', 'A2', 'A1', 'A4', 'A5']),
-            'U3': University('U3', 2, ['A2', 'A4', 'A1', 'A5', 'A6', 'A3'])
+        # Create university quotas with different sizes
+        university_quotas = {
+            'U1_Q1': UniversityQuota('U1_Q1', 1, ['A1', 'A2', 'A3', 'A4']),
+            'U1_Q2': UniversityQuota('U1_Q2', 1, ['A3', 'A4', 'A1', 'A2']),
+            'U2_Q1': UniversityQuota('U2_Q1', 1, ['A2', 'A1', 'A3', 'A4']),
+            'U2_Q2': UniversityQuota('U2_Q2', 1, ['A4', 'A3', 'A2', 'A1'])
         }
         
-        matching = gale_shapley_matching(applicants, universities)
+        # Run the algorithm
+        matching = gale_shapley_matching(applicants, university_quotas)
         
-        # Check total matched spots
-        total_matched = sum(len(matches) for matches in matching.values())
-        self.assertEqual(total_matched, 5)  # Total quota is 5
+        # Check results - all quotas should be filled
+        self.assertEqual(matching['U1_Q1'], ['A1'])
+        self.assertEqual(matching['U1_Q2'], ['A3'])
+        self.assertEqual(matching['U2_Q1'], ['A2'])
+        self.assertEqual(matching['U2_Q2'], ['A4'])
         
-        # Ensure no university exceeds its quota
-        self.assertLessEqual(len(matching['U1']), 2)
-        self.assertLessEqual(len(matching['U2']), 1)
-        self.assertLessEqual(len(matching['U3']), 2)
+        # Check that all applicants are matched
+        matched_applicants = []
+        for quota_matches in matching.values():
+            matched_applicants.extend(quota_matches)
+        
+        self.assertEqual(set(matched_applicants), {'A1', 'A2', 'A3', 'A4'})
 
 if __name__ == '__main__':
     unittest.main()

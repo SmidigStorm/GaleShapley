@@ -1,63 +1,88 @@
-import argparse
 import os
-from src.algorithm import gale_shapley_matching
-from src.utils import (
-    load_preferences_from_json, 
-    load_preferences_from_csv,
-    save_matching_to_json,
-    format_matching_result
+import argparse
+from gale_shapley import (
+    load_data,
+    create_applicant_preferences,
+    create_university_quotas,
+    gale_shapley_matching,
+    format_results_markdown,
+    save_results
 )
 
 def main():
-    parser = argparse.ArgumentParser(description='Run the Gale-Shapley matching algorithm.')
-    parser.add_argument('--json', type=str, help='Path to JSON input file')
-    parser.add_argument('--applicants-csv', type=str, help='Path to applicants CSV file')
-    parser.add_argument('--universities-csv', type=str, help='Path to universities CSV file')
-    parser.add_argument('--output', type=str, default='data/output/matching_results.json', 
-                        help='Path to output file')
+    """
+    Main entry point for running the Gale-Shapley algorithm for university admissions.
+    """
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Run the Gale-Shapley algorithm for university admissions.')
+    parser.add_argument('--applicants', type=str, default='data/input/applicants.csv',
+                        help='Path to applicants CSV file')
+    parser.add_argument('--universities', type=str, default='data/input/universities.csv',
+                        help='Path to universities CSV file')
+    parser.add_argument('--output', type=str, default='data/output/results.md',
+                        help='Path to output markdown file')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Enable verbose output')
     
     args = parser.parse_args()
     
+    # Ensure directories exist
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    
     # Load data
-    if args.json:
-        applicants, universities = load_preferences_from_json(args.json)
-    elif args.applicants_csv and args.universities_csv:
-        applicants, universities = load_preferences_from_csv(args.applicants_csv, args.universities_csv)
-    else:
-        # Default to sample data
-        print("No input files specified. Using sample data...")
-        from src.models import Applicant, University
-        
-        # Create sample applicants
-        applicants = {
-            'A1': Applicant('A1', ['U3', 'U1', 'U2']),
-            'A2': Applicant('A2', ['U1', 'U3', 'U2']),
-            'A3': Applicant('A3', ['U2', 'U1', 'U3']),
-            'A4': Applicant('A4', ['U3', 'U2', 'U1']),
-            'A5': Applicant('A5', ['U1', 'U2', 'U3']),
-            'A6': Applicant('A6', ['U2', 'U3', 'U1'])
-        }
-        
-        # Create sample universities
-        universities = {
-            'U1': University('U1', 2, ['A3', 'A1', 'A5', 'A2', 'A6', 'A4']),
-            'U2': University('U2', 1, ['A6', 'A3', 'A2', 'A1', 'A4', 'A5']),
-            'U3': University('U3', 2, ['A2', 'A4', 'A1', 'A5', 'A6', 'A3'])
-        }
+    if args.verbose:
+        print(f"Loading data from {args.applicants} and {args.universities}...")
     
-    # Run algorithm
-    matching = gale_shapley_matching(applicants, universities)
+    raw_applicants, raw_universities = load_data(args.applicants, args.universities)
     
-    # Display results
-    formatted_result = format_matching_result(matching, applicants, universities)
-    print(formatted_result)
+    if args.verbose:
+        print(f"Loaded {len(raw_applicants)} applicants and {len(raw_universities)} universities.")
+    
+    # Create Gale-Shapley entities
+    gs_applicants = create_applicant_preferences(raw_applicants)
+    university_quotas = create_university_quotas(raw_applicants, raw_universities)
+    
+    if args.verbose:
+        print(f"Created {len(gs_applicants)} applicant objects and {len(university_quotas)} university quota objects.")
+        
+        # Print sample of applicant preferences
+        print("\nSample Applicant Preferences:")
+        for i, (app_id, applicant) in enumerate(gs_applicants.items()):
+            print(f"{app_id}: {applicant.preferences}")
+            if i >= 2:  # Show just a few examples
+                print("...")
+                break
+        
+        # Print sample of university quota rankings
+        print("\nSample University Quota Rankings:")
+        for i, (quota_id, quota) in enumerate(university_quotas.items()):
+            print(f"{quota_id} (Quota: {quota.quota}): {quota.preferences[:5]}...")
+            if i >= 2:  # Show just a few examples
+                print("...")
+                break
+    
+    # Run Gale-Shapley algorithm
+    if args.verbose:
+        print("\nRunning Gale-Shapley algorithm...")
+    
+    matching = gale_shapley_matching(gs_applicants, university_quotas)
+    
+    if args.verbose:
+        print("Algorithm completed successfully.")
+    
+    # Format results
+    formatted_result = format_results_markdown(matching, gs_applicants, university_quotas, raw_applicants)
     
     # Save results
-    if args.output:
-        # Make sure output directory exists
-        os.makedirs(os.path.dirname(args.output), exist_ok=True)
-        save_matching_to_json(matching, args.output)
-        print(f"Results saved to {args.output}")
+    save_results(formatted_result, args.output)
+    
+    if args.verbose:
+        print(f"\nResults saved to {args.output}")
+    
+    # Also print results to console
+    print("\n" + formatted_result)
+    
+    return 0
 
 if __name__ == "__main__":
     main()

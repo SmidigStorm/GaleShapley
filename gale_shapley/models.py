@@ -8,7 +8,7 @@ class Applicant:
         
         Args:
             id: Unique identifier for the applicant
-            preferences: List of university IDs in order of preference
+            preferences: List of university quota IDs in order of preference
         """
         self.id = id
         self.preferences = preferences or []
@@ -17,10 +17,10 @@ class Applicant:
     
     def get_next_preference(self):
         """
-        Get the next preferred university to apply to.
+        Get the next preferred university quota to apply to.
         
         Returns:
-            The ID of the next university or None if preferences exhausted
+            The ID of the next university quota or None if preferences exhausted
         """
         if self.next_to_propose >= len(self.preferences):
             return None
@@ -30,19 +30,20 @@ class Applicant:
     
     def __repr__(self):
         return f"Applicant({self.id})"
-    
-class University:
+
+
+class UniversityQuota:
     """
-    Represents a university in the matching problem.
+    Represents a university quota in the matching problem.
     """
     def __init__(self, id, quota, preferences=None):
         """
-        Initialize a university.
+        Initialize a university quota.
         
         Args:
-            id: Unique identifier for the university
-            quota: Number of available spots
-            preferences: List of applicant IDs in order of preference
+            id: Unique identifier for the university quota (e.g., "S1_Q1")
+            quota: Number of available spots in this quota
+            preferences: List of applicant IDs in order of preference (ranked by points)
         """
         self.id = id
         self.quota = quota
@@ -51,14 +52,14 @@ class University:
     
     def prefers(self, applicant_id, current_match_id):
         """
-        Check if university prefers a new applicant over another applicant.
+        Check if university quota prefers a new applicant over another applicant.
         
         Args:
             applicant_id: ID of the applicant to check
             current_match_id: ID of an applicant to compare with
             
         Returns:
-            True if university prefers applicant_id over current_match_id
+            True if university quota prefers applicant_id over current_match_id
         """
         applicant_rank = self.preferences.index(applicant_id) if applicant_id in self.preferences else float('inf')
         match_rank = self.preferences.index(current_match_id) if current_match_id in self.preferences else float('inf')
@@ -66,7 +67,7 @@ class University:
     
     def add_applicant(self, applicant_id):
         """
-        Try to add an applicant to university's matches.
+        Try to add an applicant to university quota's matches.
         
         Args:
             applicant_id: ID of applicant to add
@@ -103,4 +104,4 @@ class University:
         return applicant_id
     
     def __repr__(self):
-        return f"University({self.id}, quota={self.quota})"
+        return f"UniversityQuota({self.id}, quota={self.quota})"
