@@ -5,6 +5,7 @@ from gale_shapley import (
     create_applicant_preferences,
     create_university_quotas,
     gale_shapley_matching,
+    handle_guaranteed_students,  # Add this import
     format_results_markdown,
     save_results
 )
@@ -66,6 +67,8 @@ def main():
         print("\nRunning Gale-Shapley algorithm...")
     
     matching = gale_shapley_matching(gs_applicants, university_quotas)
+    
+    matching = handle_guaranteed_students(matching, raw_applicants, gs_applicants, university_quotas)
     
     if args.verbose:
         print("Algorithm completed successfully.")

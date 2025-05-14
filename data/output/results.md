@@ -25,7 +25,7 @@ Total students admitted: 7 out of 10
 ### Q1 (Capacity: 1)
 | Student | Points |
 |---------|--------|
-| Jobs | 35 |
+| Newton | 10 |
 
 ### Q2 (Capacity: 2)
 | Student | Points |
@@ -36,5 +36,5 @@ Total students admitted: 7 out of 10
 ## Unmatched Students
 
 - Curie
-- Newton
+- Jobs
 - Turing
